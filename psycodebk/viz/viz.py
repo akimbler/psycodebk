@@ -1,5 +1,9 @@
+"""Utils for plotting data."""
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+from utils.misc import _parse_vals
 
 
 def plot_likert(
@@ -7,20 +11,28 @@ def plot_likert(
     dataset: pd.DataFrame,
     scales: dict = None,
     plot_percentage: bool = False,
-    colors: list = ['#ffffff', '#7A76C2', '#ff6e9c98', '#f62196', '#18c0c4', '#f3907e', '#66E9EC'],
+    colors: list = [
+        '#ffffff', '#7A76C2',
+        '#ff6e9c98', '#f62196',
+        '#18c0c4', '#f3907e', '#66E9EC'],
     na_vals: list = None,
-    figsize = None,
+    figsize: tuple = None,
 ) -> matplotlib.axes.Axes:
-    # Pad each row/question from the left, so that they're centered around the middle (Neutral) response
+    """Produce Distribution of Likert-type data."""
+    # Pad each row/question from the left, so that they're centered
+    # around the middle (Neutral) response
     if scales:
-        scales = {key: value.title() for key, value in _parse_vals(variable['values'])}
+        scales = {
+            key: value.title() for key, value in _parse_vals(variable['values'])}
     dataset.replace(na_vals, np.nan, inplace=True)
     counts = pd.concat(
-        [dataset[x].value_counts().copy() for x in dataset.columns], 
+        [dataset[x].value_counts().copy() for x in dataset.columns],
         axis=1).T
     if plot_percentage:
         counts = pd.concat(
-            [(dataset[x].value_counts() / dataset.notnull()[x].sum()) * 100 for x in dataset.columns],
+            [(dataset[x].value_counts()
+              / dataset.notnull()[x].sum())
+             * 100 for x in dataset.columns],
             axis=1).T
     counts.fillna(0, inplace=True)
     counts.columns = [str(x) for x in counts.columns]
@@ -34,7 +46,7 @@ def plot_likert(
             counts.iloc[:, :scale_middle].sum(axis=1)
             + counts.iloc[:, scale_middle] / 2)
     padding_left = 0.05 * counts.sum(axis="columns").max()
-    
+
     center = middles.max() + padding_left
     padding_values = (middles - center).abs()
     padded_counts = pd.concat([padding_values, counts], axis=1)
@@ -81,6 +93,7 @@ def plot_likert(
 
 
 def plot_distribution(dataframe, varname, value_labels):
+    """Plot distribution of non-likert type data."""
     from io import BytesIO
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -97,12 +110,14 @@ def plot_distribution(dataframe, varname, value_labels):
             y='index',
             palette=[
                 '#7A76C2', '#BC72AF', '#ff6e9c98',
-                '#FA4799', '#f62196','#8770AD', 
-                '#18c0c4','#85A8A1', '#f3907e', '#ACBCB5'], orient='h')
+                '#FA4799', '#f62196', '#8770AD',
+                '#18c0c4', '#85A8A1', '#f3907e', '#ACBCB5'], orient='h')
         g.set_xlabel('Count')
         g.set_ylabel('Values')
         plt.savefig(image, format='png', dpi=300, bbox_inches='tight')
-        image_data = base64.encodebytes(image.getvalue()).decode('utf-8').strip('\n')
+        # Produce image in base64 for html imbedding
+        image_data = base64.encodebytes(
+            image.getvalue()).decode('utf-8').strip('\n')
         plt.close()
     else:
         image_data = 'None'
