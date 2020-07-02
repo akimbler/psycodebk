@@ -7,17 +7,16 @@ from utils.misc import _parse_vals
 
 
 def plot_likert(
-    variable: dict,
-    dataset: pd.DataFrame,
-    scales: dict = None,
-    plot_percentage: bool = False,
-    colors: list = [
-        '#ffffff', '#7A76C2',
-        '#ff6e9c98', '#f62196',
-        '#18c0c4', '#f3907e', '#66E9EC'],
-    na_vals: list = None,
-    figsize: tuple = None,
-) -> matplotlib.axes.Axes:
+        variable: dict,
+        dataset: pd.DataFrame,
+        scales: dict = None,
+        plot_percentage: bool = False,
+        colors: list = [
+            '#ffffff', '#7A76C2',
+            '#ff6e9c98', '#f62196',
+            '#18c0c4', '#f3907e', '#66E9EC'],
+        na_vals: list = None,
+        figsize: tuple = None) -> matplotlib.axes.Axes:
     """Produce Distribution of Likert-type data."""
     # Pad each row/question from the left, so that they're centered
     # around the middle (Neutral) response
@@ -76,7 +75,7 @@ def plot_likert(
     xlabels = np.concatenate([left_labels, right_labels])
     xvalues = np.concatenate([left_values, right_values])
 
-    xlabels = [int(l) for l in xlabels if round(l) == l]
+    xlabels = [int(label) for label in xlabels if round(label) == label]
     if plot_percentage:
         xlabels = [str(label) + "%" for label in xlabels]
 

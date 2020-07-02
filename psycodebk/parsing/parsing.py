@@ -3,25 +3,23 @@ import pandas as pd
 import numpy as np
 from flask import render_template
 import flask
+# from .viz.viz import plot_likert, plot_distribution
 
 app = flask.Flask('parsing', template_folder='../templates')
 
 
 def construct_var_summarytab(metadata: dict, dataset: pd.DataFrame):
-    if metadata['name'] not in dataset:
-        continue
     value_labels = metadata['values'] if 'values' in metadata else 'None'
     desc = dataset[metadata['name']].describe()
     na_count = dataset[metadata['name']].replace(
         to_replace=metadata['naValues'], value=np.nan).isnull().sum()
     total = len(dataset[metadata['name']])
     complete = total - na_count
-    table_format = ''
     if len(desc) == 8:
         (count, mean, std, minimum, p25, p50, p75, maximum) = desc
         with app.app_context():
             table_format = render_template(
-            'var_summary_continous.html',
+                'var_summary_continous.html',
                 variable_name=metadata['name'][0],
                 desc=metadata['description'][0],
                 labels=value_labels,
@@ -45,19 +43,18 @@ def construct_var_summarytab(metadata: dict, dataset: pd.DataFrame):
                 complete=complete,
                 total=total,
                 mean=mean)
-    else:
-        continue
 
-    return var_table
+    return table_format
 
 
+"""
 def construct_var_disttab(
         metadata: dict,
         dataset: pd.DataFrame,
         variable_type: str,
         dataset_description: dict):
 
-    img_data = plot(
+    img_data = plot_distribution(
         dataset.replace(to_replace=metadata['naValues'], value=np.nan),
         metadata['name'],
         value_labels)
@@ -78,3 +75,4 @@ def construct_var_disttab(
         #        scale[x['values']] = [x['name']]
         #        scale.update(**_parse_vars(x['values']) for x in if x['name'] in }
         g = plot_likert(metadata, plot_data)
+"""
