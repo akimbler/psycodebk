@@ -1,0 +1,32 @@
+# Python CircleCI 2.1 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2.1
+
+jobs:
+  style_check:
+    working_directory: /tmp/src/psycodebk
+    docker:
+      # Ubuntu 14.04 with Docker 17.10.0-ce
+      - image: continuumio/miniconda3:latest
+    steps:
+      - checkout
+      - run:
+          name: Generate environment
+          command: |
+            conda create -n venv python>3.6 pylint -yq
+            source activate venv
+            pip install flake8
+      - run:
+          name: Style check
+          command: |
+            source activate venv
+            flake8 --max-line-length=79 --exclude=versioneer.py  --ignore=W503 /tmp/src/psycodebk
+
+
+workflows:
+  version: 2.1
+  style_check:
+    jobs:
+      - style_check
