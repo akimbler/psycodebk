@@ -137,7 +137,7 @@ def plot_interval(variable: dict, dataset: pd.DataFrame) -> str:
         dataset[variable['name']].replace(
             to_replace=variable['naValues'],
             value=np.nan).to_numpy(),
-        color='#ff6e9c98')
+        color='#ff6e9c98', kde=False)
     plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
     image_data = base64.encodebytes(
         image.getvalue()).decode('utf-8').strip('\n')
