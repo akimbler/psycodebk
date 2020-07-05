@@ -1,9 +1,11 @@
 """Utils for plotting data."""
-import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 import pandas as pd
 import numpy as np
-from utils.misc import _parse_vals
+from ..utils.misc import _parse_vals, get_antecedents
+from io import BytesIO
+import base64
 
 
 def plot_likert(
@@ -15,15 +17,16 @@ def plot_likert(
             '#ffffff', '#7A76C2',
             '#ff6e9c98', '#f62196',
             '#18c0c4', '#f3907e', '#66E9EC'],
-        na_vals: list = None,
-        figsize: tuple = None) -> matplotlib.axes.Axes:
+        figsize: tuple = None) -> str:
     """Produce Distribution of Likert-type data."""
     # Pad each row/question from the left, so that they're centered
     # around the middle (Neutral) response
     if scales:
         scales = {
             key: value.title() for key, value in _parse_vals(variable['values'])}
-    dataset.replace(na_vals, np.nan, inplace=True)
+    if 'naValues' in variable:
+        dataset.replace(variable['naValues'], np.nan, inplace=True)
+    dataset = dataset[get_antecedents(variable)]
     counts = pd.concat(
         [dataset[x].value_counts().copy() for x in dataset.columns],
         axis=1).T
@@ -87,33 +90,38 @@ def plot_likert(
         ax.set_xlabel("Number of Responses")
     # Control legend
     plt.legend(bbox_to_anchor=(1.05, 1))
+    image = BytesIO()
+    plt.style.use('seaborn-white')
+    plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
+    image_data = base64.encodebytes(
+        image.getvalue()).decode('utf-8').strip('\n')
+    plt.close()
+    return image_data
 
-    return ax
 
-
-def plot_distribution(dataframe, varname, value_labels):
+def plot_ordinal(variable: dict, dataset: pd.DataFrame) -> str:
     """Plot distribution of non-likert type data."""
-    from io import BytesIO
-    import seaborn as sns
     import matplotlib.pyplot as plt
-    import base64
-    if len(dataframe[varname].unique()) < 20:
-        counts = pd.DataFrame(dataframe[varname].value_counts())
-        counts.reset_index(inplace=True)
-        counts['index'] = counts['index'].astype('str')
-        counts.replace(_parse_vals(value_labels), inplace=True)
+    import textwrap
+    varname = variable['name']
+    dataset = dataset[varname].replace(to_replace=variable['naValues'], value=np.nan)
+    if dataset.notnull().sum() == 0:
+        return 'None'
+    if len(dataset.unique()) < 10:
+        value_labels = _parse_vals(variable['values'])
         image = BytesIO()
-        g = sns.barplot(
-            data=counts,
-            x=varname,
-            y='index',
-            palette=[
-                '#7A76C2', '#BC72AF', '#ff6e9c98',
-                '#FA4799', '#f62196', '#8770AD',
-                '#18c0c4', '#85A8A1', '#f3907e', '#ACBCB5'], orient='h')
-        g.set_xlabel('Count')
+        plt.style.use('seaborn-white')
+        g = sns.countplot(data=dataset.to_frame(),
+                          y=dataset.name,
+                          palette=[
+                              '#7A76C2', '#BC72AF', '#ff6e9c98',
+                              '#FA4799', '#f62196', '#8770AD',
+                              '#18c0c4', '#85A8A1', '#f3907e', '#ACBCB5'])
+        g.set_yticklabels(
+            [textwrap.fill(value_labels[y._text], width=20) for y in g.get_yticklabels()])
         g.set_ylabel('Values')
-        plt.savefig(image, format='png', dpi=300, bbox_inches='tight')
+        g.set_xlabel('Counts')
+        plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
         # Produce image in base64 for html imbedding
         image_data = base64.encodebytes(
             image.getvalue()).decode('utf-8').strip('\n')
@@ -121,3 +129,61 @@ def plot_distribution(dataframe, varname, value_labels):
     else:
         image_data = 'None'
     return image_data
+
+
+def plot_interval(variable: dict, dataset: pd.DataFrame) -> str:
+    image = BytesIO()
+    sns.distplot(
+        dataset[variable['name']].replace(
+            to_replace=variable['naValues'],
+            value=np.nan).to_numpy(),
+        color='#ff6e9c98')
+    plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
+    image_data = base64.encodebytes(
+            image.getvalue()).decode('utf-8').strip('\n')
+    plt.close()
+    return image_data
+
+
+def plot_open(variable: dict, dataset: pd.DataFrame) -> str:
+    from wordcloud import WordCloud, STOPWORDS
+    import matplotlib.pyplot as plt
+    import re
+
+    comment_words = ''
+    stopwords = set(STOPWORDS)
+    dataset = dataset[variable['name']]
+    response_list = dataset[dataset.notnull()].tolist()
+    comment_words = " ".join(response_list)
+
+    # plot the WordCloud image
+    plt.figure(figsize=(8, 8), facecolor=None)
+    wordcloud = WordCloud(
+        width=800, height=800,
+        background_color='white',
+        stopwords=stopwords,
+        min_font_size=10)
+    wordcloud.generate_from_text(comment_words)
+    image_data = wordcloud.to_svg(embed_image=True)
+    image_data = re.search(
+        r'(?P<svg_tag>[\w\W]+)base64,(?P<base64>[a-zA-Z0-9/+=]+)',
+        image_data).group('base64')
+    plt.close()
+    # Produce image in base64 for html imbedding
+    return image_data
+
+
+def plot(variable: dict, typing: str, dataset: pd.DataFrame) -> str:
+    image_data = 'None'
+    distribution_data = 'None'
+    if typing == 'Scale':
+        image_data = plot_likert(variable, dataset)
+        distribution_data = plot_interval(variable, dataset)
+    if typing == 'ordinal':
+        image_data = plot_ordinal(variable, dataset)
+    if typing == 'open':
+        image_data = plot_open(variable, dataset)
+    if typing == 'interval':
+        image_data = plot_interval(variable, dataset)
+
+    return image_data, distribution_data

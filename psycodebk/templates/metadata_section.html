@@ -1,0 +1,13 @@
+<div id="metadata" class="section level3">
+<h3>Metadata</h3>
+<ul>
+	<li><p><strong>Name</strong>: {{ metadata["name"] }}</p></li>
+	<li><p><strong>Description</strong>: {{ metadata["description"] }}</p></li>
+	<li><p><strong>Identifier</strong>: {{ metadata["identifier"] }}t</p></li>
+	<li><p><strong>Schemaversion</strong>: {{ metadata["schemaVersion"] }}</p></li>
+	<li><p><strong>Author</strong>: {{ metadata['author'] }}</p></li>
+	<li><p><strong>Funding</strong>: {{ metadata['funder'] }}</p></li>
+	<li><p><strong>Citation</strong>: {{ metadata["citation"] }}</p></li>
+	<li><p><strong>Keywords</strong>: {{ ', '.join(metadata["keywords"]) }}</p></li>
+</ul>
+</div>

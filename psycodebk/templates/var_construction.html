@@ -1,0 +1,28 @@
+<div id="{{ var_name|upper }}" class="section level3 tabset">
+    <div name="{{ var_name }}" data-unique="{{ var_name  }}"></div>
+    <h3>{{ var_name|upper }}</h3>
+    <p>{{ var_description }}</p>
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active">
+            <a role="tab" data-toggle="tab" href="#{{ var_name|upper }}_distribution" aria-controls="{{ var_name|upper }}_distribution">Distribution</a></li>
+        <li role="presentation" class="">
+            <a role="tab" data-toggle="tab" href="#{{ var_name|upper }}_summary" aria-controls="{{ var_name|upper }}_summary">Summary statistics</a></li>
+        <li role="presentation" class="">
+            <a role="tab" data-toggle="tab" href="#{{ var_name|upper }}_labels" aria-controls="{{ var_name|upper }}_labels">Value labels</a></li></ul>
+    <div class="tab-content">
+        <div id="{{ var_name|upper }}_distribution" class="section level4 tab-pane tabbed-pane active" role="tabpanel">
+            {% if typing == "Scale" %}
+                <p><img src="data:image/png;base64,{{ image_data }}" width="672"></p>
+                <p><img src="data:image/png;base64,{{ distribution_data }}" width="672"></p>
+            {% else %}
+                <p><img src="data:image/png;base64,{{ image_data }} " width="672"></p>
+            {% endif %}
+            <p>{{ missing_values }} missing values.</p></div>
+        <div id="{{ var_name|upper }}_summary" class="section level4 tab-pane tabbed-pane" role="tabpanel">
+            <table class="table table-condensed">
+                {{ var_table|safe }}</table></div>
+        <div id="{{ var_name|upper }}_labels" class="section level4 tab-pane tabbed-pane" role="tabpanel">
+            <ul>
+                {{ value_list|safe }}</ul><!-- end of list --></div>
+    </div>
+</div>

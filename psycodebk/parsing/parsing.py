@@ -1,50 +1,71 @@
 """Modules for constructing variable tabs."""
 import pandas as pd
 import numpy as np
-from flask import render_template
-import flask
+from pathlib import Path
+from scipy.stats import shapiro, kurtosistest, skewtest
+from ..utils.misc import _parse_vals
+script_dir = Path(__file__).parent.parent
 # from .viz.viz import plot_likert, plot_distribution
 
-app = flask.Flask('parsing', template_folder='../templates')
+
+def construct_var_summtab(metadata: dict, dataset: pd.DataFrame, typing: str) -> (str, int):
+    # value_labels = metadata['values'] if 'values' in metadata else 'None'
+    if 'naValues' in metadata and typing in ['Scale', 'interval', 'ordinal']:
+        missing_values = dataset[metadata['name']].replace(
+            to_replace=metadata['naValues'], value=pd.NA).isnull().sum()
+        desc = dataset[metadata['name']].replace(
+            to_replace=metadata['naValues'], value=pd.NA).describe().to_frame().T
+    elif 'naValues' in metadata and typing not in ['Scale', 'interval', 'ordinal']:
+        missing_values = dataset[metadata['name']].replace(
+            to_replace=[str(x) for x in metadata['naValues']], value=pd.NA).isnull().sum()
+        desc = dataset[metadata['name']].replace(
+            to_replace=[str(x) for x in metadata['naValues']], value=pd.NA).describe().to_frame().T
+    else:
+        missing_values = dataset[metadata['name']].isnull().sum()
+        desc = dataset[metadata['name']].describe().to_frame().T
+    # total = len(dataset[metadata['name']])
+    # complete = total - missing_values
+    if typing in ['ordinal', 'interval', 'Scale']:
+        if 'naValues' in metadata:
+            var_data = dataset[metadata['name']].replace(
+                to_replace=metadata['naValues'],
+                value=np.nan)
+        else:
+            var_data = dataset[metadata['name']].replace(to_replace=[-88.0], value=pd.NA)
+        var_data = var_data[var_data.notnull()]
+        if var_data.shape[0] > 20:
+            kurtosis = pd.Series(
+                kurtosistest(var_data), index=['Kurtosis Z', 'Kurtosis p']).to_frame().T
+        else:
+            kurtosis = pd.Series(
+                [pd.NA, pd.NA], index=['Kurtosis Z', 'Kurtosis p']).to_frame().T
+
+        if var_data.shape[0] > 8:
+            skewness = pd.Series(skewtest(var_data), index=['Skew Z', 'Skew p']).to_frame().T
+        else:
+            skewness = pd.Series([pd.NA, pd.NA], index=['Skew Z', 'Skew p']).to_frame().T
+
+        if var_data.shape[0] > 2:
+            normality = pd.Series(
+                shapiro(var_data[var_data.notnull()]),
+                index=['Normality W', 'Normality p']).to_frame().T
+        else:
+            normality = pd.Series(
+                [pd.NA, pd.NA],
+                index=['Normality W', 'Normality p']).to_frame().T
+        kurtosis.rename({0: metadata['name']}, inplace=True)
+        skewness.rename({0: metadata['name']}, inplace=True)
+        normality.rename({0: metadata['name']}, inplace=True)
+        desc = pd.concat([desc, kurtosis, skewness, normality], axis=1)
+        return desc.round(3).to_html(), missing_values
+    return desc.to_html(), missing_values
 
 
-def construct_var_summarytab(metadata: dict, dataset: pd.DataFrame):
-    value_labels = metadata['values'] if 'values' in metadata else 'None'
-    desc = dataset[metadata['name']].describe()
-    na_count = dataset[metadata['name']].replace(
-        to_replace=metadata['naValues'], value=np.nan).isnull().sum()
-    total = len(dataset[metadata['name']])
-    complete = total - na_count
-    if len(desc) == 8:
-        (count, mean, std, minimum, p25, p50, p75, maximum) = desc
-        with app.app_context():
-            table_format = render_template(
-                'var_summary_continous.html',
-                variable_name=metadata['name'][0],
-                desc=metadata['description'][0],
-                labels=value_labels,
-                missing=na_count,
-                complete=complete,
-                total=total,
-                mean=mean,
-                std=std,
-                minimum=minimum,
-                p25=p25,
-                p50=p50,
-                p75=p75,
-                maximum=maximum)
-    elif len(desc) == 4:
-        with app.app_context():
-            table_format = render_template(
-                'var_summary_string.html',
-                variable_name=metadata['name'],
-                desc=metadata['description'],
-                missing=na_count,
-                complete=complete,
-                total=total,
-                mean=mean)
-
-    return table_format
+def produce_value_list(variable: dict) -> str:
+    list_string = []
+    for value, label in _parse_vals(variable['values']).items():
+        list_string.append(f'<li><strong>{label.title()}</strong>: <em>{value}</em></li>')
+    return '\n'.join(list_string)
 
 
 """
@@ -61,7 +82,7 @@ def construct_var_disttab(
     var_table = var_table_header.format(
         variable_table=table_format,
         variable_name_upper=metadata['name'].upper(),
-        missing_values=na_count,
+        missing_values=missing_values,
         variable_name=metadata['name'],
         description=metadata['description'],
         image_64_encode=img_data,
