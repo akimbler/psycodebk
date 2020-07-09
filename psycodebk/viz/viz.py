@@ -3,9 +3,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from ..utils.misc import _parse_vals, get_antecedents
 from io import BytesIO
 import base64
+from ..utils.misc import _parse_vals
 
 
 def plot_likert(
@@ -21,12 +21,13 @@ def plot_likert(
     """Produce Distribution of Likert-type data."""
     # Pad each row/question from the left, so that they're centered
     # around the middle (Neutral) response
+    plt.style.use('seaborn-white')
     if scales:
         scales = {
             key: value.title() for key, value in _parse_vals(variable['values'])}
     if 'naValues' in variable:
         dataset.replace(variable['naValues'], np.nan, inplace=True)
-    dataset = dataset[get_antecedents(variable)]
+    dataset = dataset[variable['derivation']['-var']]
     counts = pd.concat(
         [dataset[x].value_counts().copy() for x in dataset.columns],
         axis=1).T
@@ -91,7 +92,6 @@ def plot_likert(
     # Control legend
     plt.legend(bbox_to_anchor=(1.05, 1))
     image = BytesIO()
-    plt.style.use('seaborn-white')
     plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
     image_data = base64.encodebytes(
         image.getvalue()).decode('utf-8').strip('\n')
@@ -110,7 +110,7 @@ def plot_ordinal(variable: dict, dataset: pd.DataFrame) -> str:
     if len(dataset.unique()) < 10:
         value_labels = _parse_vals(variable['values'])
         image = BytesIO()
-        plt.style.use('seaborn-white')
+        plt.style.use('seaborn-whitegrid')
         g = sns.countplot(data=dataset.to_frame(),
                           y=dataset.name,
                           palette=[
@@ -118,7 +118,7 @@ def plot_ordinal(variable: dict, dataset: pd.DataFrame) -> str:
                               '#FA4799', '#f62196', '#8770AD',
                               '#18c0c4', '#85A8A1', '#f3907e', '#ACBCB5'])
         g.set_yticklabels(
-            [textwrap.fill(value_labels[y._text], width=20) for y in g.get_yticklabels()])
+            [textwrap.fill(value_labels[y._text].title(), width=20) for y in g.get_yticklabels()])
         g.set_ylabel('Values')
         g.set_xlabel('Counts')
         plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
@@ -133,11 +133,13 @@ def plot_ordinal(variable: dict, dataset: pd.DataFrame) -> str:
 
 def plot_interval(variable: dict, dataset: pd.DataFrame) -> str:
     image = BytesIO()
-    sns.distplot(
+    plt.style.use('seaborn-whitegrid')
+    g = sns.distplot(
         dataset[variable['name']].replace(
             to_replace=variable['naValues'],
             value=np.nan).to_numpy(),
-        color='#ff6e9c98', kde=False)
+        color='#ff6e9c98', kde=True, kde_kws={'bw': 'scott'})
+    g.set(xlabel='Score', ylabel='Frequency')
     plt.savefig(image, format='png', dpi=144, bbox_inches='tight')
     image_data = base64.encodebytes(
         image.getvalue()).decode('utf-8').strip('\n')

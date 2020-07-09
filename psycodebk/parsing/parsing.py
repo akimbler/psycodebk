@@ -22,7 +22,7 @@ def construct_var_summtab(metadata: dict, dataset: pd.DataFrame, typing: str) ->
             to_replace=[str(x) for x in metadata['naValues']], value=pd.NA).describe().to_frame().T
     else:
         missing_values = dataset[metadata['name']].isnull().sum()
-        desc = dataset[metadata['name']].describe().to_frame().T
+        desc = dataset[metadata['name']].describe().T
     # total = len(dataset[metadata['name']])
     # complete = total - missing_values
     if typing in ['ordinal', 'interval', 'Scale']:
@@ -45,7 +45,7 @@ def construct_var_summtab(metadata: dict, dataset: pd.DataFrame, typing: str) ->
         else:
             skewness = pd.Series([pd.NA, pd.NA], index=['Skew Z', 'Skew p']).to_frame().T
 
-        if var_data.shape[0] > 2:
+        if var_data.shape[0] > 2 and (var_data.max() - var_data.min()) > 0:
             normality = pd.Series(
                 shapiro(var_data[var_data.notnull()]),
                 index=['Normality W', 'Normality p']).to_frame().T
@@ -57,8 +57,8 @@ def construct_var_summtab(metadata: dict, dataset: pd.DataFrame, typing: str) ->
         skewness.rename({0: metadata['name']}, inplace=True)
         normality.rename({0: metadata['name']}, inplace=True)
         desc = pd.concat([desc, kurtosis, skewness, normality], axis=1)
-        return desc.round(3).to_html(), missing_values
-    return desc.to_html(), missing_values
+        return desc.round(3).to_html(classes='topazCells'), missing_values
+    return desc.to_html(classes='topazCells'), missing_values
 
 
 def produce_value_list(variable: dict) -> str:

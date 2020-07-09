@@ -5,12 +5,12 @@ from setuptools import setup
 
 if __name__ == '__main__':
     import versioneer
-    from psycodebook.__about__ import __version__, DOWNLOAD_URL
+    from psycodebk.__about__ import __version__, DOWNLOAD_URL
 
     cmdclass = versioneer.get_cmdclass()
 
     setup(
-        name='psycodebook',
+        name='psycodebk',
         version=__version__,
         cmdclass=cmdclass,
         download_url=DOWNLOAD_URL
