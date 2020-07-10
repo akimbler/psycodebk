@@ -13,7 +13,7 @@ del _version
 
 __copyright__ = ('Copyright 2020--now, Adam Kimbler')
 __credits__ = ['Adam Kimbler']
-__packagename__ = 'psycodebook'
+__packagename__ = 'pycodebook'
 
 DOWNLOAD_URL = (
     'https://github.com/akimbler/{name}/archive/{ver}.tar.gz'.format(
