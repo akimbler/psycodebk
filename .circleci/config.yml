@@ -6,7 +6,7 @@ version: 2.1
 
 jobs:
   style_check:
-    working_directory: /tmp/src/psycodebk
+    working_directory: /tmp/src/pycodebook
     docker:
       # Ubuntu 14.04 with Docker 17.10.0-ce
       - image: continuumio/miniconda3:latest
@@ -22,7 +22,7 @@ jobs:
           name: Style check
           command: |
             source activate venv
-            flake8 --max-line-length=100 --exclude=versioneer.py  --ignore=W503 /tmp/src/psycodebk
+            flake8 --max-line-length=100 --exclude=versioneer.py  --ignore=W503 /tmp/src/pycodebook
 
 
 workflows:
